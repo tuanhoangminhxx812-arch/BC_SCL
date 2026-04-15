@@ -129,25 +129,47 @@ else:
     nhan_xet_giai_ngan = "Ở mức **rất tốt** (Hoàn thành theo bám sát kế hoạch)"
     kl_giai_ngan = "Các công tác thi công và nghiệm thu hồ sơ đang phối hợp rất nhịp nhàng, đảm bảo tính pháp lý và giảm tải rủi ro dồn khối lượng vào cuối năm."
 
-# Tính số lượng dự án có giá trị thực hiện = 0
+# Tính số dư
 so_du_an_0 = len(df[df['Giá trị thực hiện'] == 0])
+so_du_an_quyet_toan = len(df[df['Giá trị quyết toán'] > 0])
+tong_du_an = len(df)
+
+# Phân tích đồng bộ chứng từ
+if so_du_an_0 > 0:
+    nhan_xet_0 = f"Báo cáo cho thấy có **{so_du_an_0}** dự án hoàn toàn chưa ghi nhận chứng từ chi phí dở dang ('Giá trị thực hiện' = 0đ)."
+    kl_chung_tu = "Cần rà soát chéo lượng công trình này ngay. Xem đây là do thực sự chưa triển khai ngoài hiện trường, hay kỹ thuật đã cho làm nhưng nhà thầu chây ỳ chưa lập hồ sơ nghiệm thu. Tránh tình trạng nợ đọng, thi công xong mà sổ sách không có chứng từ."
+else:
+    nhan_xet_0 = f"Rất tốt, 100% ({tong_du_an}/{tong_du_an}) dự án đều đã có hồ sơ ghi nhận Khối lượng thực hiện ban đầu."
+    kl_chung_tu = "Sự phối hợp cập nhật chứng từ giữa phòng Kỹ thuật và Kế toán đang bám sát thực tế, không có tình trạng bị trễ nhịp hay bỏ quên dự án."
+
+if so_du_an_quyet_toan == 0:
+    nhan_xet_qt = "Đồng thời, chưa có dự án nào chuyển sang bước 'Giá trị quyết toán'."
+elif so_du_an_quyet_toan == tong_du_an:
+    nhan_xet_qt = "Tuyệt vời, tất cả các dự án đều đã có số liệu Quyết Toán! Quá trình khép sổ tài chính SCL gần như đã trọn vẹn."
+else:
+    nhan_xet_qt = f"Tiến độ quyết toán: Đã có **{so_du_an_quyet_toan}/{tong_du_an}** dự án có số liệu Quyết toán thành công."
+
+# Kiến nghị
+if so_du_an_quyet_toan == tong_du_an:
+    kien_nghi = "- Hồ sơ tài chính đã đạt mức độ hoàn thiện cao. Đề nghị các phòng ban chuẩn bị đóng luồng hồ sơ cuối năm và báo cáo Giám đốc."
+else:
+    kien_nghi = "- Đẩy nhanh tiến độ hoàn công chuyển các công trình thành Quyết Toán (QT).\n- Liên tục tổ chức đối chiếu công nợ khối lượng dở dang hàng tháng giữa kế toán và kỹ thuật."
 
 # Sinh nội dung văn bản phân tích
 analysis_text = f"Dưới đây là phần trình bày tổng hợp các chỉ số đánh giá chuyên môn về mặt quản trị tài chính doanh nghiệp:\n\n"
 
 analysis_text += f"""**1. Tỷ lệ giải ngân: {nhan_xet_giai_ngan}**
-- Tổng quy mô vốn khái toán cho {len(df)} công trình là hơn **{tong_khai_toan/1e9:,.1f} tỷ đồng**.
+- Tổng quy mô vốn khái toán cho {tong_du_an} công trình là hơn **{tong_khai_toan/1e9:,.1f} tỷ đồng**.
 - Tuy nhiên, giá trị khối lượng thực hiện ghi nhận trên sổ sách là **{tong_thuc_hien/1e9:,.2f} tỷ đồng**, đạt mức **{ty_le_giai_ngan:.2f}%**.
 => Kết luận: {kl_giai_ngan}
 
 **2. Công tác đồng bộ giữa thực địa và chứng từ (Phòng Kỹ thuật vs Kế toán)**
-- Báo cáo cho thấy có **{so_du_an_0}** dự án hoàn toàn chưa có chi phí dở dang ("Giá trị thực hiện" = 0đ). 
-- Đồng thời, chưa có dự án nào có "Giá trị quyết toán".
-=> Kết luận: Cần rà soát chéo các công trình này. Xem đây là do thực sự chưa triển khai ngoài hiện trường, hay kỹ thuật đã cho làm nhưng nhà thầu chây ỳ, không chịu làm hồ sơ nghiệm thu. Tránh tình trạng nợ đọng, thi công xong mà sổ sách không có chứng từ.
+- {nhan_xet_0}
+- {nhan_xet_qt}
+=> Kết luận: {kl_chung_tu}
 
 **🔴 KIẾN NGHỊ TỪ KẾ TOÁN TRƯỞNG:**
-- Tăng cường tổ chức đối chiếu công nợ khối lượng dở dang hàng tháng giữa kế toán và kỹ thuật.
-- Cần có quy định ép nhà thầu thi công khẩn trương làm hồ sơ nghiệm thu đối với khối lượng đã thực tế hoàn thành.
+{kien_nghi}
 """
 
 st.markdown(analysis_text)
