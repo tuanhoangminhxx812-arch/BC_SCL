@@ -118,29 +118,39 @@ st.dataframe(df_display, use_container_width=True)
 st.markdown("---")
 st.subheader("⚠️ Phân tích rủi ro & Đề xuất (Trình Ban Giám Đốc)")
 
-analysis_text = f"""Dưới đây là phần trình bày tổng hợp các chỉ số cảnh báo rủi ro về mặt quản trị tài chính doanh nghiệp:
+# Đánh giá tỷ lệ giải ngân động theo số liệu
+if ty_le_giai_ngan < 30:
+    nhan_xet_giai_ngan = "Ở mức **báo động đỏ** (Trễ tiến độ giải ngân)"
+    kl_giai_ngan = "Sự chênh lệch lớn giữa Ngân sách và Thực tế cho thấy các thủ tục chuẩn bị hồ sơ thanh toán đang bị đình trệ nghiêm trọng."
+elif ty_le_giai_ngan < 70:
+    nhan_xet_giai_ngan = "Ở mức **trung bình** (Cần đẩy nhanh hơn)"
+    kl_giai_ngan = "Tiến độ giải ngân đang được thực hiện nhưng cần đốc thúc thêm để rải đều trong năm, hoàn thành đúng mục tiêu dòng tiền."
+else:
+    nhan_xet_giai_ngan = "Ở mức **rất tốt** (Hoàn thành theo bám sát kế hoạch)"
+    kl_giai_ngan = "Các công tác thi công và nghiệm thu hồ sơ đang phối hợp rất nhịp nhàng, đảm bảo tính pháp lý và giảm tải rủi ro dồn khối lượng vào cuối năm."
 
-1. Tỷ lệ giải ngân ở mức báo động đỏ (Rủi ro trễ tiến độ hoàn thành chi phí)
-- Hiện tại, tổng quy mô vốn khái toán cho {len(df)} công trình là hơn {tong_khai_toan/1e9:,.1f} tỷ đồng.
-- Tuy nhiên, giá trị khối lượng thực hiện mới chỉ ghi nhận trên sổ sách là {tong_thuc_hien/1e9:,.2f} tỷ đồng, tức là tỷ lệ khối lượng hoàn thành mới đạt {ty_le_giai_ngan:.2f}%.
-=> Kết luận: Sự chênh lệch khổng lồ giữa Ngân sách và Thực tế giải ngân chỉ ra rằng tiến độ thi công và các thủ tục chuẩn bị hồ sơ thanh/quyết toán đang bị đình trệ nghiêm trọng. Việc dồn ứ khối lượng thanh toán vào cuối năm sẽ gây áp lực rất lớn lên dòng tiền của Công ty và rủi ro bị từ chối thanh toán do hồ sơ làm gấp, sai sót.
+# Tính số lượng dự án có giá trị thực hiện = 0
+so_du_an_0 = len(df[df['Giá trị thực hiện'] == 0])
 
-2. Thiếu đồng bộ giữa "Thực địa" và "Hồ sơ chứng từ"
-- Qua rà soát, có nhiều dự án đang ở trạng thái "Đang thi công" hoặc "Lập PAKT" nhưng chưa hề có xác nhận hay chứng từ ghi nhận chi phí dở dang ("Giá trị thực hiện" = 0đ). 
-- Đặc biệt, chưa có dự án nào có "Giá trị quyết toán".
-=> Kết luận: Đang có sự tắc nghẽn thông tin giữa phòng Kỹ thuật đang giám sát thi công và bộ phận Tài chính Kế toán. Nhà thầu có thể đã làm xong một phần khối lượng nhưng không chịu làm hồ sơ nghiệm thu giai đoạn (nghiệm thu A-B) để Kế toán hạch toán chi phí và theo dõi hạn mức tín dụng.
+# Sinh nội dung văn bản phân tích
+analysis_text = f"Dưới đây là phần trình bày tổng hợp các chỉ số đánh giá chuyên môn về mặt quản trị tài chính doanh nghiệp:\n\n"
 
-3. Kẹt nút thắt ở các Dự án trọng điểm
-- Đối chiếu công trình có vốn khái toán cao nhất (13.2 tỷ đồng) là dự án "Sửa chữa lớn máy phát điện Cummins" hiện vẫn đang dậm chân ở bước "Lập kế hoạch đấu thầu".
-=> Cảnh báo: Với quy định ngân sách SCL hằng năm, việc chậm chọn nhà thầu đối với dự án trên 10 tỷ đồng này tiềm ẩn nguy cơ phá vỡ kế hoạch tài chính đã duyệt. Nếu không ký được hợp đồng và tạm ứng trong quý này, khả năng không kịp thực hiện trong năm tài chính là rất cao.
+analysis_text += f"""**1. Tỷ lệ giải ngân: {nhan_xet_giai_ngan}**
+- Tổng quy mô vốn khái toán cho {len(df)} công trình là hơn **{tong_khai_toan/1e9:,.1f} tỷ đồng**.
+- Tuy nhiên, giá trị khối lượng thực hiện ghi nhận trên sổ sách là **{tong_thuc_hien/1e9:,.2f} tỷ đồng**, đạt mức **{ty_le_giai_ngan:.2f}%**.
+=> Kết luận: {kl_giai_ngan}
 
-🔴 KIẾN NGHỊ TỪ KẾ TOÁN TRƯỞNG:
-1. Yêu cầu Phòng Kỹ Thuật / Quản lý dự án phải rà soát các hợp đồng để ép dãn tiến độ thanh toán của nhà thầu. Yêu cầu nhà thầu làm ngay hồ sơ nghiệm thu khối lượng đã hoàn thành. 
-2. Yêu cầu Phòng Kế hoạch khẩn trương trình phê duyệt sớm hồ sơ đấu thầu dự án máy Cummins, cam kết mốc thời gian chốt hợp đồng.
-3. Thường xuyên tổ chức đối chiếu công nợ dở dang hàng tháng giữa kế toán và kỹ thuật để tránh tình trạng "công trình đã xong nhưng sổ sách kế toán chưa có giấy tờ".
+**2. Công tác đồng bộ giữa thực địa và chứng từ (Phòng Kỹ thuật vs Kế toán)**
+- Báo cáo cho thấy có **{so_du_an_0}** dự án hoàn toàn chưa có chi phí dở dang ("Giá trị thực hiện" = 0đ). 
+- Đồng thời, chưa có dự án nào có "Giá trị quyết toán".
+=> Kết luận: Cần rà soát chéo các công trình này. Xem đây là do thực sự chưa triển khai ngoài hiện trường, hay kỹ thuật đã cho làm nhưng nhà thầu chây ỳ, không chịu làm hồ sơ nghiệm thu. Tránh tình trạng nợ đọng, thi công xong mà sổ sách không có chứng từ.
+
+**🔴 KIẾN NGHỊ TỪ KẾ TOÁN TRƯỞNG:**
+- Tăng cường tổ chức đối chiếu công nợ khối lượng dở dang hàng tháng giữa kế toán và kỹ thuật.
+- Cần có quy định ép nhà thầu thi công khẩn trương làm hồ sơ nghiệm thu đối với khối lượng đã thực tế hoàn thành.
 """
 
-st.error(analysis_text)
+st.markdown(analysis_text)
 
 # --- Hàm tạo báo cáo Word ---
 def export_word_report():
