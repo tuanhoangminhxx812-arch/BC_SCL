@@ -13,9 +13,18 @@ st.set_page_config(page_title="Báo Cáo Kế Toán SCL", layout="wide", initial
 # --- Đọc dữ liệu ---
 @st.cache_data
 def load_data():
-    file_path = r"D:\HOC A.I\KT SCL\BC SCL\Tong Hop.xlsx"
+    # Ưu tiên tìm file cùng thư mục với script này (để tương thích khi deploy lên Streamlit Cloud)
+    base_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+    file_path = os.path.join(base_dir, "Tong Hop.xlsx")
+    
+    # Fallback cho chạy local nếu thư mục hiện tại khác
     if not os.path.exists(file_path):
-        st.error(f"Không tìm thấy file: {file_path}")
+        local_path = r"D:\HOC A.I\KT SCL\BC SCL\Tong Hop.xlsx"
+        if os.path.exists(local_path):
+            file_path = local_path
+
+    if not os.path.exists(file_path):
+        st.error("Không tìm thấy file dữ liệu 'Tong Hop.xlsx'. Vui lòng upload file này vào cùng thư mục với mã nguồn trên Github.")
         return pd.DataFrame()
         
     df = pd.read_excel(file_path, sheet_name="Sheet1")
