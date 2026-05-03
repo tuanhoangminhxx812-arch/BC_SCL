@@ -1,0 +1,7 @@
+﻿=== Tim Cong trinh va Tong so du cuoi ky ===
+Row 14: C├┤ng tr├¼nh: VTAD2605001 - Sß╗¡a chß╗»a lß╗¢n ─æ╞░ß╗¥ng d├óy trung hß║í thß║┐ v├á trß║ím biß║┐n ├íp n─âm 2026
+Row 48: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH 103128028
+Row 49: C├┤ng tr├¼nh: VTAD2606001 - Sß╗¡a chß╗»a lß╗¢n TSC─É hß╗ç thß╗æng ─æo ─æß║┐m tr├¬n ─æß╗ïa b├án C├┤ng ty ─Éiß╗çn Lß╗▒c V┼⌐ng T├áu n─âm 2026 - Phß║ºn bß║úo tr├¼ TU, TI
+Row 215: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH 1445729378
+Row 216: C├┤ng tr├¼nh: VTAD2606002 - SCL TSC─É Thay thß║┐ LBFCO,FCO,LA ng─ân ngß╗½a sß╗▒ cß╗æ 2026
+Row 251: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH 178378131

@@ -6,43 +6,259 @@ from docx.shared import Pt, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 import os
+import re
 
 # --- Cấu hình trang Streamlit ---
 st.set_page_config(page_title="Báo Cáo Kế Toán SCL", layout="wide", initial_sidebar_state="collapsed")
 
-# --- Đọc dữ liệu ---
+# ============================================================
+# CSS RESPONSIVE – Tương thích máy tính & điện thoại
+# ============================================================
+st.markdown("""
+<style>
+/* ── Google Font ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Ẩn header mặc định Streamlit ── */
+#MainMenu { visibility: hidden; }
+footer    { visibility: hidden; }
+header    { visibility: hidden; }
+
+/* ── Giảm padding tổng thể trên mobile ── */
+.block-container {
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 1.2rem !important;
+    padding-right: 1.2rem !important;
+    max-width: 100% !important;
+}
+
+/* ── Metric cards ── */
+[data-testid="metric-container"] {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+[data-testid="metric-container"]:hover {
+    transform: translateY(-2px);
+}
+[data-testid="metric-container"] label {
+    color: #94a3b8 !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: #f1f5f9 !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    word-break: break-word;
+}
+
+/* ── Title ── */
+h1 { font-size: clamp(1.2rem, 4vw, 2rem) !important; }
+h2 { font-size: clamp(1rem, 3vw, 1.5rem) !important; }
+h3 { font-size: clamp(0.9rem, 2.5vw, 1.2rem) !important; }
+
+/* ── Buttons ── */
+.stButton > button {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s !important;
+}
+
+/* ── Dataframe responsive ── */
+[data-testid="stDataFrame"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+[data-testid="stDataFrame"] table {
+    font-size: clamp(0.65rem, 1.5vw, 0.9rem) !important;
+}
+
+/* ── Divider ── */
+hr { border-color: #334155 !important; margin: 1rem 0 !important; }
+
+/* ============================================
+   MOBILE – màn hình ≤ 768px
+   Streamlit columns sẽ tự xuống dòng
+   ============================================ */
+@media (max-width: 768px) {
+
+    /* Padding nhỏ lại */
+    .block-container {
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+        padding-top: 0.8rem !important;
+    }
+
+    /* Các cột Streamlit stack dọc */
+    [data-testid="column"] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        min-width: 100% !important;
+    }
+
+    /* Metric nhỏ hơn */
+    [data-testid="metric-container"] {
+        padding: 0.7rem 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        font-size: 1.1rem !important;
+    }
+
+    /* Chart full width */
+    .stpyplot, iframe {
+        width: 100% !important;
+    }
+
+    /* Title nhỏ hơn */
+    h1 { font-size: 1.1rem !important; line-height: 1.4; }
+    h2 { font-size: 1rem !important; }
+    h3 { font-size: 0.9rem !important; }
+
+    /* Nút full width trên mobile */
+    .stButton > button, .stDownloadButton > button {
+        width: 100% !important;
+        font-size: 0.85rem !important;
+        padding: 0.5rem !important;
+    }
+
+    /* Bảng cuộn ngang */
+    [data-testid="stDataFrame"] {
+        font-size: 0.65rem !important;
+    }
+
+    /* Alert / info box */
+    .stAlert { font-size: 0.8rem !important; }
+
+    /* Expander */
+    .streamlit-expanderHeader { font-size: 0.85rem !important; }
+}
+
+/* ============================================
+   TABLET – màn hình 769px – 1024px
+   ============================================ */
+@media (min-width: 769px) and (max-width: 1024px) {
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        font-size: 1.1rem !important;
+    }
+    h1 { font-size: 1.4rem !important; }
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# ============================================================
+# HÀM ĐỌC FILE PM_092 – TỔNG SỐ DƯ CUỐI KỲ THEO CÔNG TRÌNH
+# ============================================================
+@st.cache_data
+def load_pm092():
+    """
+    Đọc file PM_092_*.xlsx trong cùng thư mục, parse và trả về
+    dict { mã_công_trình: tổng_số_dư_cuối_kỳ } từ dòng
+    'Tổng số dư cuối kỳ _ CÔNG TRÌNH' tương ứng với từng công trình.
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+
+    # Tìm tất cả file PM_092*.xlsx – lấy file mới nhất (theo thời gian sửa)
+    pm_files = [
+        os.path.join(base_dir, f)
+        for f in os.listdir(base_dir)
+        if f.upper().startswith("PM_092") and f.lower().endswith(".xlsx")
+    ]
+
+    if not pm_files:
+        return {}, None  # không có file
+
+    pm_path = max(pm_files, key=os.path.getmtime)
+    pm_filename = os.path.basename(pm_path)
+
+    raw = pd.read_excel(pm_path, sheet_name=0, header=None)
+
+    result = {}
+    current_ma_ct = None
+
+    for _, row in raw.iterrows():
+        cell0 = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
+
+        # Nhận diện dòng "Công trình: MACT - Tên..."
+        if cell0.startswith("Công trình:"):
+            # Trích mã công trình (phần đầu sau "Công trình: ", trước " - ")
+            parts = cell0.replace("Công trình:", "").strip()
+            ma = parts.split(" - ")[0].strip()
+            current_ma_ct = ma
+
+        # Nhận diện dòng "Tổng số dư cuối kỳ _ CÔNG TRÌNH"
+        elif "Tổng số dư cuối kỳ _ CÔNG TRÌNH" in cell0 and current_ma_ct:
+            # Giá trị nằm ở cột 4 (index 4)
+            val = row.iloc[4]
+            if pd.notna(val):
+                try:
+                    result[current_ma_ct] = float(val)
+                except (ValueError, TypeError):
+                    pass
+            current_ma_ct = None  # reset – tránh gán nhầm công trình tiếp theo
+
+    return result, pm_filename
+
+
+# --- Đọc dữ liệu chính ---
 @st.cache_data
 def load_data():
-    # Ưu tiên tìm file cùng thư mục với script này (để tương thích khi deploy lên Streamlit Cloud)
     base_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
     file_path = os.path.join(base_dir, "Tong Hop.xlsx")
-    
-    # Fallback cho chạy local nếu thư mục hiện tại khác
+
     if not os.path.exists(file_path):
         local_path = r"D:\HOC A.I\KT SCL\BC SCL\Tong Hop.xlsx"
         if os.path.exists(local_path):
             file_path = local_path
 
     if not os.path.exists(file_path):
-        st.error("Không tìm thấy file dữ liệu 'Tong Hop.xlsx'. Vui lòng upload file này vào cùng thư mục với mã nguồn trên Github.")
+        st.error("Không tìm thấy file dữ liệu 'Tong Hop.xlsx'.")
         return pd.DataFrame()
-        
+
     df = pd.read_excel(file_path, sheet_name="Sheet1")
-    
-    # Lọc bỏ dòng "Tổng giá trị" (dòng mà Mã công trình bị trống)
     df = df[df['Mã công trình'].notna()]
-    
-    # Fill NA cho các cột giá trị
     df['Giá trị khái toán'] = df['Giá trị khái toán'].fillna(0)
     df['Giá trị thực hiện'] = df['Giá trị thực hiện'].fillna(0)
     df['Giá trị quyết toán'] = df['Giá trị quyết toán'].fillna(0)
-    
     return df
 
+
+# ============================================================
+# LOAD DỮ LIỆU
+# ============================================================
 df = load_data()
+pm_dict, pm_filename = load_pm092()
 
 if df.empty:
     st.stop()
+
+# --- Áp dụng Tổng số dư cuối kỳ _ CÔNG TRÌNH vào Giá trị thực hiện ---
+so_cong_trinh_cap_nhat = 0
+if pm_dict:
+    def update_thuc_hien(row):
+        ma = str(row['Mã công trình']).strip()
+        if ma in pm_dict:
+            return pm_dict[ma]
+        return row['Giá trị thực hiện']
+
+    df_updated = df.copy()
+    df_updated['Giá trị thực hiện'] = df_updated.apply(update_thuc_hien, axis=1)
+    so_cong_trinh_cap_nhat = sum(
+        1 for ma in df['Mã công trình'].astype(str).str.strip() if ma in pm_dict
+    )
+    df = df_updated
 
 # --- Tính toán các chỉ số ---
 tong_khai_toan = df['Giá trị khái toán'].sum()
@@ -50,17 +266,46 @@ tong_thuc_hien = df['Giá trị thực hiện'].sum()
 tong_quyet_toan = df['Giá trị quyết toán'].sum()
 ty_le_giai_ngan = (tong_thuc_hien / tong_khai_toan * 100) if tong_khai_toan > 0 else 0
 
-# --- Giao diện Dashboard ---
+# ============================================================
+# GIAO DIỆN DASHBOARD
+# ============================================================
 st.title("📊 BÁO CÁO TỔNG HỢP & PHÂN TÍCH QUẢN TRỊ CHI PHÍ SCL")
 
-col_title, col_btn = st.columns([8, 2])
-with col_btn:
-    if st.button("🔄 Cập nhật/Tải lại dữ liệu", type="primary", use_container_width=True):
+# --- Thanh nút điều khiển ---
+col_title, col_btn1, col_btn2 = st.columns([6, 2, 2])
+with col_btn1:
+    if st.button("🔄 Tải lại Tong Hop", type="secondary", use_container_width=True):
+        load_data.clear()
+        st.rerun()
+with col_btn2:
+    if st.button("📥 Cập nhật từ PM_092", type="primary", use_container_width=True):
+        load_pm092.clear()
         load_data.clear()
         st.rerun()
 
+# --- Banner thông tin file PM_092 ---
+if pm_filename:
+    st.success(
+        f"✅ **Nguồn dữ liệu thực hiện:** `{pm_filename}` – "
+        f"Đã cập nhật **{so_cong_trinh_cap_nhat}/{len(df)}** công trình từ "
+        f"cột 'Tổng số dư cuối kỳ _ CÔNG TRÌNH'"
+    )
+else:
+    st.warning("⚠️ Chưa tìm thấy file **PM_092\\*.xlsx** trong thư mục. "
+               "Giá trị thực hiện đang dùng dữ liệu từ Tong Hop.xlsx.")
+
+# --- Hiển thị bảng mapping PM_092 ---
+if pm_dict:
+    with st.expander("🔍 Chi tiết số dư cuối kỳ theo công trình từ PM_092 (click để xem)"):
+        pm_df = pd.DataFrame([
+            {"Mã công trình": ma, "Tổng số dư cuối kỳ _ CÔNG TRÌNH (đ)": f"{val:,.0f}"}
+            for ma, val in pm_dict.items()
+        ])
+        st.dataframe(pm_df, use_container_width=True)
+
 st.markdown("---")
 
+# --- Các chỉ số tổng quan ---
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Tổng Số Công Trình", len(df))
 col2.metric("Tổng Giá Trị Khái Toán", f"{tong_khai_toan:,.0f} đ")
@@ -75,50 +320,58 @@ col_chart1, col_chart2 = st.columns(2)
 with col_chart1:
     st.markdown("**1. Tỷ trọng trạng thái dự án**")
     status_counts = df['Trạng thái'].value_counts()
-    
+
     fig1, ax1 = plt.subplots(figsize=(7, 4))
-    # Sử dụng bảng màu chuyên nghiệp
     colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99']
-    ax1.pie(status_counts, labels=status_counts.index, autopct='%1.1f%%', startangle=90, colors=colors[:len(status_counts)], wedgeprops={'edgecolor': 'white'})
-    ax1.axis('equal')  
+    ax1.pie(status_counts, labels=status_counts.index, autopct='%1.1f%%',
+            startangle=90, colors=colors[:len(status_counts)],
+            wedgeprops={'edgecolor': 'white'})
+    ax1.axis('equal')
     st.pyplot(fig1)
 
 with col_chart2:
     st.markdown("**2. Top dự án có mức ngân sách cao nhất (Khái toán vs Thực hiện)**")
     df_sorted = df.sort_values(by='Giá trị khái toán', ascending=False).head(5)
-    
+
     fig2, ax2 = plt.subplots(figsize=(8, 4))
     x = range(len(df_sorted))
     width = 0.35
-    
-    # Đơn vị tỷ đồng để hiển thị đẹp hơn
+
     khai_toan_ty = df_sorted['Giá trị khái toán'] / 1e9
     thuc_hien_ty = df_sorted['Giá trị thực hiện'] / 1e9
-    
+
     ax2.bar([i - width/2 for i in x], khai_toan_ty, width, label='Khái toán (Tỷ đ)', color='#2171b5')
     ax2.bar([i + width/2 for i in x], thuc_hien_ty, width, label='Thực hiện (Tỷ đ)', color='#fd8d3c')
-    
+
     ax2.set_xticks(x)
     m_cong_trinh = df_sorted['Mã công trình'].tolist()
     ax2.set_xticklabels(m_cong_trinh, rotation=30, ha="right")
     ax2.legend()
     ax2.grid(axis='y', linestyle='--', alpha=0.7)
-    
+
     st.pyplot(fig2)
 
 st.markdown("---")
 st.subheader("📋 Bảng số liệu chi tiết các dự án SCL")
-# Định dạng số tiền có dấu phẩy để dễ nhìn
-df_display = df[['Mã công trình', 'Tên công trình', 'Trạng thái', 'Giá trị khái toán', 'Giá trị thực hiện', 'Giá trị quyết toán']].copy()
+
+# Đánh dấu công trình nào đã được cập nhật từ PM_092
+df_display = df[['Mã công trình', 'Tên công trình', 'Trạng thái',
+                  'Giá trị khái toán', 'Giá trị thực hiện', 'Giá trị quyết toán']].copy()
+
+# Thêm cột nguồn dữ liệu
+df_display['Nguồn TH'] = df_display['Mã công trình'].apply(
+    lambda ma: '📥 PM_092' if str(ma).strip() in pm_dict else '📄 Tong Hop'
+)
+
 for col in ['Giá trị khái toán', 'Giá trị thực hiện', 'Giá trị quyết toán']:
     df_display[col] = df_display[col].apply(lambda x: f"{x:,.0f}")
+
 st.dataframe(df_display, use_container_width=True)
 
 # --- Phân tích của Kế toán trưởng ---
 st.markdown("---")
 st.subheader("⚠️ Phân tích rủi ro & Đề xuất (Trình Ban Giám Đốc)")
 
-# Đánh giá tỷ lệ giải ngân động theo số liệu
 if ty_le_giai_ngan < 30:
     nhan_xet_giai_ngan = "Ở mức **báo động đỏ** (Trễ tiến độ giải ngân)"
     kl_giai_ngan = "Sự chênh lệch lớn giữa Ngân sách và Thực tế cho thấy các thủ tục chuẩn bị hồ sơ thanh toán đang bị đình trệ nghiêm trọng."
@@ -129,12 +382,10 @@ else:
     nhan_xet_giai_ngan = "Ở mức **rất tốt** (Hoàn thành theo bám sát kế hoạch)"
     kl_giai_ngan = "Các công tác thi công và nghiệm thu hồ sơ đang phối hợp rất nhịp nhàng, đảm bảo tính pháp lý và giảm tải rủi ro dồn khối lượng vào cuối năm."
 
-# Tính số dư
 so_du_an_0 = len(df[df['Giá trị thực hiện'] == 0])
 so_du_an_quyet_toan = len(df[df['Giá trị quyết toán'] > 0])
 tong_du_an = len(df)
 
-# Phân tích đồng bộ chứng từ
 if so_du_an_0 > 0:
     nhan_xet_0 = f"Báo cáo cho thấy có **{so_du_an_0}** dự án hoàn toàn chưa ghi nhận chứng từ chi phí dở dang ('Giá trị thực hiện' = 0đ)."
     kl_chung_tu = "Cần rà soát chéo lượng công trình này ngay. Xem đây là do thực sự chưa triển khai ngoài hiện trường, hay kỹ thuật đã cho làm nhưng nhà thầu chây ỳ chưa lập hồ sơ nghiệm thu. Tránh tình trạng nợ đọng, thi công xong mà sổ sách không có chứng từ."
@@ -149,14 +400,12 @@ elif so_du_an_quyet_toan == tong_du_an:
 else:
     nhan_xet_qt = f"Tiến độ quyết toán: Đã có **{so_du_an_quyet_toan}/{tong_du_an}** dự án có số liệu Quyết toán thành công."
 
-# Kiến nghị
 if so_du_an_quyet_toan == tong_du_an:
     kien_nghi = "- Hồ sơ tài chính đã đạt mức độ hoàn thiện cao. Đề nghị các phòng ban chuẩn bị đóng luồng hồ sơ cuối năm và báo cáo Giám đốc."
 else:
     kien_nghi = "- Đẩy nhanh tiến độ hoàn công chuyển các công trình thành Quyết Toán (QT).\n- Liên tục tổ chức đối chiếu công nợ khối lượng dở dang hàng tháng giữa kế toán và kỹ thuật."
 
-# Sinh nội dung văn bản phân tích
-analysis_text = f"Dưới đây là phần trình bày tổng hợp các chỉ số đánh giá chuyên môn về mặt quản trị tài chính doanh nghiệp:\n\n"
+analysis_text = "Dưới đây là phần trình bày tổng hợp các chỉ số đánh giá chuyên môn về mặt quản trị tài chính doanh nghiệp:\n\n"
 
 analysis_text += f"""**1. Tỷ lệ giải ngân: {nhan_xet_giai_ngan}**
 - Tổng quy mô vốn khái toán cho {tong_du_an} công trình là hơn **{tong_khai_toan/1e9:,.1f} tỷ đồng**.
@@ -177,34 +426,38 @@ st.markdown(analysis_text)
 # --- Hàm tạo báo cáo Word ---
 def export_word_report():
     doc = docx.Document()
-    
-    # Cấu hình Font mặc định toàn văn bản
+
     style = doc.styles['Normal']
     font = style.font
     font.name = 'Times New Roman'
     font.size = Pt(13)
-    
-    # Header
+
     doc.add_paragraph('CÔNG TY ĐIỆN LỰC VŨNG TÀU\nPHÒNG TÀI CHÍNH KẾ TOÁN')
-    
+
     title = doc.add_paragraph('\nBÁO CÁO PHÂN TÍCH TÌNH HÌNH THỰC HIỆN KẾ HOẠCH TÀI CHÍNH\nCÔNG TÁC SỬA CHỮA LỚN NĂM 2026\n')
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     for run in title.runs:
         run.bold = True
         run.font.size = Pt(16)
-        
+
     p = doc.add_paragraph()
-    p.add_run('Kính gửi: ').bold = True
+    run_kinh_gui = p.add_run('Kính gửi: ')
+    run_kinh_gui.bold = True
     p.add_run('Ông (Bà) Giám đốc Công ty')
-    
-    doc.add_paragraph(f"Căn cứ vào dữ liệu tổng hợp về tình hình thực hiện kế hoạch các dự án sửa chữa lớn, trên cương vị Kế toán trưởng, tôi xin báo cáo các số liệu tài chính quan trọng và các điểm bất ổn cần Giám đốc khẩn trương chỉ đạo như sau:")
-    
+
+    # Ghi nguồn dữ liệu vào Word
+    src_note = f"(Nguồn dữ liệu thực hiện: {pm_filename})" if pm_filename else "(Nguồn dữ liệu thực hiện: Tong Hop.xlsx)"
+    doc.add_paragraph(
+        f"Căn cứ vào dữ liệu tổng hợp về tình hình thực hiện kế hoạch các dự án sửa chữa lớn {src_note}, "
+        "trên cương vị Kế toán trưởng, tôi xin báo cáo các số liệu tài chính quan trọng và các điểm bất ổn "
+        "cần Giám đốc khẩn trương chỉ đạo như sau:"
+    )
+
     doc.add_paragraph('I. BẢNG TỔNG HỢP SỐ LIỆU TÀI CHÍNH:', style='Heading 3')
-    
-    # Tạo bảng
+
     table = doc.add_table(rows=1, cols=4)
     table.style = 'Table Grid'
-    
+
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = 'Chỉ tiêu'
     hdr_cells[1].text = 'Kế hoạch/Khái toán (VNĐ)'
@@ -212,28 +465,34 @@ def export_word_report():
     hdr_cells[3].text = 'Tỉ lệ hoàn thành (%)'
     for cell in hdr_cells:
         cell.paragraphs[0].runs[0].bold = True
-    
+
     row_cells = table.add_row().cells
     row_cells[0].text = 'Toàn bộ công trình SCL'
     row_cells[1].text = f"{tong_khai_toan:,.0f}"
     row_cells[2].text = f"{tong_thuc_hien:,.0f}"
     row_cells[3].text = f"{ty_le_giai_ngan:.2f}%"
-    
+
     doc.add_paragraph()
-    
+
     doc.add_paragraph('II. PHÂN TÍCH ĐÁNH GIÁ & CẢNH BÁO BẤT ỔN:', style='Heading 3')
-    
+
+    import re as _re
     parts = analysis_text.split('\n')
     for p_text in parts:
-        if p_text.strip():
-            p_docx = doc.add_paragraph(p_text.strip())
-            if p_text.startswith("🔴") or "CẢNH BÁO" in p_text or "Kết luận" in p_text:
-                for run in p_docx.runs:
-                    run.bold = True
-            
+        clean = p_text.strip()
+        if not clean:
+            continue
+        # Bỏ ký hiệu Markdown trước khi ghi vào Word
+        plain = _re.sub(r'\*\*(.+?)\*\*', r'\1', clean)
+        is_bold = (clean.startswith("🔴") or "CẢNH BÁO" in clean
+                   or clean.startswith("**") or clean.startswith("=>"))
+        p_docx = doc.add_paragraph(plain)
+        if is_bold:
+            run_bold = p_docx.runs[0] if p_docx.runs else p_docx.add_run(plain)
+            run_bold.bold = True
+
     doc.add_paragraph()
-    
-    # Ký tên
+
     p_sig = doc.add_paragraph()
     p_sig.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     run_date = p_sig.add_run('Vũng Tàu, ngày ...... tháng ...... năm ...... \n')
@@ -241,18 +500,59 @@ def export_word_report():
     run_title = p_sig.add_run('KẾ TOÁN TRƯỞNG\n\n\n\n\n')
     run_title.bold = True
     p_sig.add_run('(Đã ký)')
-    
-    # Chuyển docx buffer sang bytes để Streamlit tải
+
     bio = io.BytesIO()
     doc.save(bio)
     return bio.getvalue()
 
+
 st.markdown("### 📥 Tải Xuất báo cáo chính thức")
-st.download_button(
-    label="📄 Tải Xuất Báo Cáo Kế Toán Trưởng (File Word .docx)",
-    data=export_word_report(),
-    file_name="Bao_Cao_SCL_KeToanTruong.docx",
-    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-)
+
+# Thư mục lưu file — cùng thư mục với script
+_base_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+
+# Tạo sẵn file Word vào session_state để tránh lỗi khi Streamlit re-run lúc bấm nút
+if 'word_report_bytes' not in st.session_state:
+    st.session_state['word_report_bytes'] = None
+if 'word_saved_path' not in st.session_state:
+    st.session_state['word_saved_path'] = None
+
+col_dl1, col_dl2 = st.columns([3, 1])
+with col_dl1:
+    if st.button("⚙️ Tạo / Cập nhật File Báo Cáo Word", use_container_width=True):
+        with st.spinner("Đang tạo file Word..."):
+            try:
+                from datetime import datetime
+                word_bytes = export_word_report()
+                st.session_state['word_report_bytes'] = word_bytes
+
+                # Lưu thẳng vào thư mục chứa file báo cáo
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+                save_filename = f"Bao_Cao_SCL_KeToanTruong_{timestamp}.docx"
+                save_path = os.path.join(_base_dir, save_filename)
+                with open(save_path, "wb") as f:
+                    f.write(word_bytes)
+                st.session_state['word_saved_path'] = save_path
+
+                st.success(f"✅ Đã tạo & lưu file vào:\n\n📁 `{save_path}`")
+            except Exception as e:
+                st.error(f"❌ Lỗi tạo file Word: {e}")
+
+    # Hiển thị đường dẫn file đã lưu (nếu có)
+    if st.session_state.get('word_saved_path') and os.path.exists(st.session_state['word_saved_path']):
+        saved = st.session_state['word_saved_path']
+        st.info(f"📂 File đã lưu tại: `{saved}`")
+
+with col_dl2:
+    if st.session_state.get('word_report_bytes'):
+        st.download_button(
+            label="📄 Tải Xuống (.docx)",
+            data=st.session_state['word_report_bytes'],
+            file_name="Bao_Cao_SCL_KeToanTruong.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True
+        )
+    else:
+        st.info("Bấm '⚙️ Tạo File' trước")
 
 # Chạy ứng dụng bằng lệnh: streamlit run "D:\HOC A.I\KT SCL\BC SCL\scl_dashboard.py"

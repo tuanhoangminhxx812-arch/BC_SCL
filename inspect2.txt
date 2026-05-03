@@ -1,0 +1,13 @@
+﻿Total rows: 265
+Columns: 8
+Row 42: Sß╗æ d╞░ cuß╗æi kß╗│ 103128028
+Row 45: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ Hß║áNG Mß╗ñC 103128028
+Row 48: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH 103128028
+Row 209: Sß╗æ d╞░ cuß╗æi kß╗│ 1445729378
+Row 212: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ Hß║áNG Mß╗ñC 1445729378
+Row 215: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH 1445729378
+Row 239: Sß╗æ d╞░ cuß╗æi kß╗│ 172480327
+Row 245: Sß╗æ d╞░ cuß╗æi kß╗│ 5897804
+Row 248: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ Hß║áNG Mß╗ñC 178378131
+Row 251: Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH 178378131
+Row 257: Sß╗æ d╞░ cuß╗æi kß╗│ 1727235537

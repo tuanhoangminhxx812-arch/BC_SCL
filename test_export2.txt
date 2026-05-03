@@ -1,0 +1,6 @@
+﻿OK: title created, runs= 1
+OK: kinh gui paragraph
+OK: table header created
+OK: table row added
+OK: analysis text added
+SUCCESS: doc saved, bytes= 35882

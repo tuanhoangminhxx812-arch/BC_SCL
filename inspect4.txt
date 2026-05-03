@@ -1,0 +1,47 @@
+﻿=== 15 dong cuoi ===
+                                                                             0           1                                          2    3          4    5    6    7
+250                                             Tß╗òng sß╗æ ph├ít sinh _ C├öNG TR├îNH         NaN                                        NaN  NaN  178378131  NaN  NaN  NaN
+251                                            Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH         NaN                                        NaN  NaN  178378131  NaN  NaN  NaN
+252                                                                        NaN         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+253                                                                        NaN         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+254                                                                        NaN         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+255                                                               Sß╗æ d╞░ ─æß║ºu kß╗│         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+256                                                             Cß╗Öng ph├ít sinh  1756914319                                   29678782  NaN        NaN  NaN  NaN  NaN
+257                                                              Sß╗æ d╞░ cuß╗æi kß╗│  1727235537                                        NaN  NaN        NaN  NaN  NaN  NaN
+258                                                                        NaN         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+259                                                                        NaN         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+260                                                                        NaN         NaN  TP. Hß╗ô Ch├¡ Minh, Ng├áy ΓÇª. th├íng ΓÇª. n─âm ΓÇª..  NaN        NaN  NaN  NaN  NaN
+261                                                             NG╞»ß╗£I Lß║¼P BIß╗éU         NaN                             Kß║╛ TO├üN TR╞»ß╗₧NG  NaN        NaN  NaN  NaN  NaN
+262                                                               (K├╜, hß╗ì t├¬n)         NaN                     (K├╜, hß╗ì t├¬n, ─æ├│ng dß║Ñu)  NaN        NaN  NaN  NaN  NaN
+263                                                                        NaN         NaN                                        NaN  NaN        NaN  NaN  NaN  NaN
+264  EVN_PM_092_TT200, ng╞░ß╗¥i in: TUAN2HM.HCM.VTA, ng├áy in: 03/05/2026 19:20:41   Trang 1/1                                        NaN  NaN        NaN  NaN  NaN  NaN
+
+=== Row 48 full ===
+0    Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH
+1                                NaN
+2                                NaN
+3                                NaN
+4                          103128028
+5                                NaN
+6                                NaN
+7                                NaN
+
+=== Row 215 full ===
+0    Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH
+1                                NaN
+2                                NaN
+3                                NaN
+4                         1445729378
+5                                NaN
+6                                NaN
+7                                NaN
+
+=== Row 251 full ===
+0    Tß╗òng sß╗æ d╞░ cuß╗æi kß╗│ _ C├öNG TR├îNH
+1                                NaN
+2                                NaN
+3                                NaN
+4                          178378131
+5                                NaN
+6                                NaN
+7                                NaN
