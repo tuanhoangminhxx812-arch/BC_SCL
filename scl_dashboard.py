@@ -354,19 +354,201 @@ with col_chart2:
 st.markdown("---")
 st.subheader("📋 Bảng số liệu chi tiết các dự án SCL")
 
-# Đánh dấu công trình nào đã được cập nhật từ PM_092
+# Chuẩn bị dữ liệu
 df_display = df[['Mã công trình', 'Tên công trình', 'Trạng thái',
                   'Giá trị khái toán', 'Giá trị thực hiện', 'Giá trị quyết toán']].copy()
-
-# Thêm cột nguồn dữ liệu
 df_display['Nguồn TH'] = df_display['Mã công trình'].apply(
     lambda ma: '📥 PM_092' if str(ma).strip() in pm_dict else '📄 Tong Hop'
 )
-
 for col in ['Giá trị khái toán', 'Giá trị thực hiện', 'Giá trị quyết toán']:
     df_display[col] = df_display[col].apply(lambda x: f"{x:,.0f}")
 
-st.dataframe(df_display, use_container_width=True)
+# ── Màu badge trạng thái ──
+STATUS_COLOR = {
+    'Đang thi công':          ('#22c55e', '#052e16'),
+    'Lập kế hoạch đầu thầu': ('#3b82f6', '#0c1a3a'),
+    'Lập PAKT-Tổng dự toán':  ('#f59e0b', '#2d1a00'),
+    'Hoàn thành':             ('#a855f7', '#1a0a2e'),
+    'Quyết toán':             ('#06b6d4', '#042329'),
+}
+def status_badge(trang_thai):
+    color, bg = STATUS_COLOR.get(str(trang_thai), ('#94a3b8', '#1e293b'))
+    return (f'<span style="background:{bg};color:{color};border:1px solid {color};'
+            f'border-radius:20px;padding:2px 10px;font-size:0.75rem;'
+            f'font-weight:600;white-space:nowrap;">{trang_thai}</span>')
+
+# ── Build HTML table (Desktop) + Cards (Mobile) ──
+table_rows = ""
+cards_html = ""
+
+for _, row in df_display.iterrows():
+    ma        = row['Mã công trình']
+    ten       = row['Tên công trình']
+    tt        = row['Trạng thái']
+    kt        = row['Giá trị khái toán']
+    th        = row['Giá trị thực hiện']
+    qt        = row['Giá trị quyết toán']
+    nguon     = row['Nguồn TH']
+    badge     = status_badge(tt)
+
+    # Desktop row
+    table_rows += f"""
+<tr>
+  <td style="font-weight:600;color:#60a5fa;">{ma}</td>
+  <td style="max-width:220px;">{ten}</td>
+  <td>{badge}</td>
+  <td style="text-align:right;font-variant-numeric:tabular-nums;">{kt}</td>
+  <td style="text-align:right;font-variant-numeric:tabular-nums;color:#34d399;">{th}</td>
+  <td style="text-align:right;font-variant-numeric:tabular-nums;color:#a78bfa;">{qt}</td>
+  <td style="text-align:center;">{nguon}</td>
+</tr>
+"""
+
+    # Mobile card
+    cards_html += f"""
+<div class="mobile-card">
+  <div class="mc-header">
+    <span class="mc-ma">{ma}</span>
+    {badge}
+  </div>
+  <div class="mc-ten">{ten}</div>
+  <div class="mc-row"><span class="mc-label">Khái toán</span>
+    <span class="mc-val">{kt} đ</span></div>
+  <div class="mc-row"><span class="mc-label">Thực hiện</span>
+    <span class="mc-val mc-green">{th} đ</span></div>
+  <div class="mc-row"><span class="mc-label">Quyết toán</span>
+    <span class="mc-val mc-purple">{qt} đ</span></div>
+  <div class="mc-row"><span class="mc-label">Nguồn TH</span>
+    <span class="mc-val">{nguon}</span></div>
+</div>
+"""
+
+html_table = f"""
+<style>
+/* ── DESKTOP TABLE ── */
+.scl-wrap {{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}}
+.scl-table {{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  background: #0f172a;
+  color: #e2e8f0;
+}}
+.scl-table thead tr {{
+  background: #1e293b;
+}}
+.scl-table th {{
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  white-space: nowrap;
+  border-bottom: 2px solid #334155;
+}}
+.scl-table td {{
+  padding: 9px 12px;
+  border-bottom: 1px solid #1e293b;
+  vertical-align: middle;
+  line-height: 1.4;
+}}
+.scl-table tbody tr:hover td {{
+  background: #1e293b;
+}}
+
+/* ── MOBILE CARDS (ẩn trên desktop, hiện trên mobile) ── */
+.mobile-cards  {{ display: none; }}
+.desktop-table {{ display: block; }}
+
+.mobile-card {{
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}}
+.mc-header {{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}}
+.mc-ma {{
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #60a5fa;
+}}
+.mc-ten {{
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}}
+.mc-row {{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #334155;
+}}
+.mc-row:last-child {{ border-bottom: none; }}
+.mc-label {{
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}}
+.mc-val {{
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}}
+.mc-green {{ color: #34d399 !important; }}
+.mc-purple {{ color: #a78bfa !important; }}
+
+@media (max-width: 768px) {{
+  .mobile-cards  {{ display: block; }}
+  .desktop-table {{ display: none; }}
+}}
+</style>
+
+<!-- Desktop table -->
+<div class="desktop-table scl-wrap">
+  <table class="scl-table">
+    <thead>
+      <tr>
+        <th>Mã CT</th>
+        <th>Tên công trình</th>
+        <th>Trạng thái</th>
+        <th style="text-align:right">Khái toán (đ)</th>
+        <th style="text-align:right">Thực hiện (đ)</th>
+        <th style="text-align:right">Quyết toán (đ)</th>
+        <th style="text-align:center">Nguồn TH</th>
+      </tr>
+    </thead>
+    <tbody>
+{table_rows}
+    </tbody>
+  </table>
+</div>
+
+<!-- Mobile cards -->
+<div class="mobile-cards">
+{cards_html}
+</div>
+"""
+
+st.markdown(html_table, unsafe_allow_html=True)
+
 
 # --- Phân tích của Kế toán trưởng ---
 st.markdown("---")
